@@ -16,6 +16,13 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
+float lastX = SCR_WIDTH / 2.0f;
+float lastY = SCR_HEIGHT / 2.0f;
+bool firstMouse = true;
+
+float deltaTime = 0.0f;
+float lastFrame = 0.0f;
+
 int main()
 {
     // glfw: initialize and configure
@@ -40,6 +47,8 @@ int main()
     }
     glfwMakeContextCurrent(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    glfwSetCursorPosCallback(window, mouse_callback);
+    glfwSetScrollCallback(window, scroll_callback);
     
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     
@@ -47,51 +56,31 @@ int main()
     if (glewInit() != GLEW_OK) {
         std::cerr << "Error initializing GLEW!" << std::endl;
     }
-
-    float vertices[] = {
-        // positions          // colors           // texture coords
-         0.5f,  0.5f, 0.0f,   1.0f, 0.0f, 0.0f,   1.0f, 1.0f,   // top right
-         0.5f, -0.5f, 0.0f,   0.0f, 1.0f, 0.0f,   1.0f, 0.0f,   // bottom right
-        -0.5f, -0.5f, 0.0f,   0.0f, 0.0f, 1.0f,   0.0f, 0.0f,   // bottom left
-        -0.5f,  0.5f, 0.0f,   1.0f, 1.0f, 0.0f,   0.0f, 1.0f    // top left
-    };
-    unsigned int indices[] = {  // note that we start from 0!
-        0, 1, 3,   // first triangle
-        1, 2, 3    // second triangle
-    };
     
-    unsigned int VBO, VAO, EBO;
-    glGenVertexArrays(1, &VAO);
-    glBindVertexArray(VAO);
     
-    glGenBuffers(1, &EBO);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
-    
-    glGenBuffers(1, &VBO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); 
-    
-    ResourceManager::LoadShader("./shaders/vertexShader.vs", "./shaders/fragShader.fs", nullptr, "shaders");
+    ResourceManager::LoadShader("./shaders/lightShader.vs", "./shaders/lightShader.fs", nullptr, "lightShader");
+    ResourceManager::LoadShader("./shaders/cubeShader.vs", "./shaders/cubeShader.fs", nullptr, "cubeShader");
     ResourceManager::LoadTexture("./resources/textures/container.png", true, "container");
     ResourceManager::AddCamera("camera");
     
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
+    unsigned int VAO;
+    Cube::InitCube(VAO);
     
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(3*sizeof(float)));
-    glEnableVertexAttribArray(1);
+    Cube cube(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3(0.0f, 0.5f, 1.0f));
+    Cube lightCube(glm::vec3(1.5f, 2.5f, 2.0f), glm::vec3(1.0f, 1.0f, 1.0f), true);
+    lightCube.SetScale(0.2f);
+    cube.SetScale(0.4f);
     
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 8 * sizeof(float), (void*)(6*sizeof(float)));
-    glEnableVertexAttribArray(2);
-    
-    Cube cube;
-    
+    glEnable(GL_DEPTH_TEST);
     
     // render loop
     // -----------
     while (!glfwWindowShouldClose(window))
     {
+        
+        float currentFrame = static_cast<float>(glfwGetTime());
+        deltaTime = currentFrame - lastFrame;
+        lastFrame = currentFrame;
         
         // input
         // -----
@@ -103,10 +92,9 @@ int main()
         glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        glBindTexture(GL_TEXTURE_2D, ResourceManager::GetTexture("container").ID);
-        glBindVertexArray(VAO);
-        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        glBindVertexArray(VAO); 
         cube.Draw();
+        lightCube.Draw();
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);
@@ -125,16 +113,47 @@ void processInput(GLFWwindow *window)
 {
     if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
+    
+    Camera& camera = ResourceManager::GetCamera("camera");
+    
+    if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
+        camera.ProcessKeyboard(FORWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        camera.ProcessKeyboard(BACKWARD, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        camera.ProcessKeyboard(LEFT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        camera.ProcessKeyboard(RIGHT, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        camera.ProcessKeyboard(UP, deltaTime);
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        camera.ProcessKeyboard(DOWN, deltaTime);
 }
 
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
+    float xpos = static_cast<float>(xposIn);
+    float ypos = static_cast<float>(yposIn);
 
+    if (firstMouse)
+    {
+        lastX = xpos;
+        lastY = ypos;
+        firstMouse = false;
+    }
+
+    float xoffset = xpos - lastX;
+    float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+
+    lastX = xpos;
+    lastY = ypos;
+
+    ResourceManager::GetCamera("camera").ProcessMouseMovement(xoffset, yoffset);
 }
 
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 {
-    
+    ResourceManager::GetCamera("camera").ProcessMouseScroll(static_cast<float>(yoffset));
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes

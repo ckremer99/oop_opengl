@@ -36,7 +36,7 @@ public:
     // generates a camera object
     static Camera    AddCamera(std::string cameraName);
     
-    static Camera    GetCamera(std::string cameraName); 
+    static Camera&   GetCamera(std::string cameraName);
 private:
     // private constructor, that is we do not want any actual resource manager objects. Its members and functions should be publicly available (static).
     ResourceManager() { }

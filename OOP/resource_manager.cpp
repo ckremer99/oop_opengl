@@ -115,6 +115,6 @@ Camera ResourceManager::AddCamera(std::string cameraName) {
     return newCamera;
 }
 
-Camera ResourceManager::GetCamera(std::string cameraName) {
-    return Cameras[cameraName]; 
+Camera& ResourceManager::GetCamera(std::string cameraName) {
+    return Cameras[cameraName];
 }
