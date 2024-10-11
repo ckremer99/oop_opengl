@@ -12,7 +12,7 @@ Cube::Cube(glm::vec3 position, glm::vec3 color, bool isLight) {
         light.position = this->position;
         light.ambient = glm::vec3(0.3f) * this->color;
         light.diffuse = glm::vec3(0.8f) * this->color;
-        light.specular = glm::vec3(0.2f) * glm::vec3(1.0f);
+        light.specular = glm::vec3(1.0f);
         LightManager::AddLight(light);
     } else {
         material.ambient = glm::vec3(0.1) * this->color;

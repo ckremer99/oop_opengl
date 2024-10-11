@@ -15,10 +15,20 @@ struct Light {
 class LightManager {
 public:
     LightManager();
+    
+    static glm::vec3 dirLightDirection;
+    static glm::vec3 dirLightAmbient;
+    static glm::vec3 dirLightDiffuse;
+    static glm::vec3 dirLightSpecular; 
+    
     static std::vector<Light> lights;
     static int numberOfLights;
     static void AddLight(Light light);
     static void SetUniforms();
+    
+    static float constant;
+    static float linear;
+    static float quadratic;
     
     static float ambientStrength;
     
