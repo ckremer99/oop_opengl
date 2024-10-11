@@ -16,6 +16,7 @@ class LightManager {
 public:
     LightManager();
     static std::vector<Light> lights;
+    static int numberOfLights;
     static void AddLight(Light light);
     static void SetUniforms();
     

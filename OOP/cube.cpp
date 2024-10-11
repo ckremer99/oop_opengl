@@ -10,9 +10,9 @@ Cube::Cube(glm::vec3 position, glm::vec3 color, bool isLight) {
     if (isLight) {
         Light light;
         light.position = this->position;
-        light.ambient = glm::vec3(1.0f) * this->color;
+        light.ambient = glm::vec3(0.3f) * this->color;
         light.diffuse = glm::vec3(0.8f) * this->color;
-        light.specular = glm::vec3(1.0f) * glm::vec3(1.0f);
+        light.specular = glm::vec3(0.2f) * glm::vec3(1.0f);
         LightManager::AddLight(light);
     } else {
         material.ambient = glm::vec3(0.1) * this->color;
@@ -20,8 +20,6 @@ Cube::Cube(glm::vec3 position, glm::vec3 color, bool isLight) {
         material.specular = glm::vec3(0.5) * glm::vec3(1.0f);
         material.shininess = 32.0f;
     }
-    
-    
 }
 
 void Cube::InitCube(unsigned int &VAO) {
@@ -46,6 +44,11 @@ void Cube::SetTexture(std::string name) {
     texture = ResourceManager::GetTexture(name);
 }
 
+void Cube::SetSpecMap(std::string name) {
+    hasSpecMap = true;
+    specMap = ResourceManager::GetTexture(name); 
+}
+
 void Cube::SetScale(float value) {
     this->scale = value;
 }
@@ -56,8 +59,9 @@ void Cube::Draw() {
     glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)(800.0f / 600.0f), 0.1f, 100.0f);
     glm::mat4 view = camera.GetViewMatrix();
     glm::mat4 model = glm::mat4(1.0f);
-    model = glm::scale(model, glm::vec3(scale, scale, scale));
     model = glm::translate(model, this->position);
+    model = glm::scale(model, glm::vec3(scale, scale, scale));
+
     
     Shader shader;
     
@@ -90,16 +94,26 @@ void Cube::Draw() {
         // Set object color
         shader.SetVector3f("objectColor", this->color[0], this->color[1], this->color[2]);
         
+        //determine what textures/maps are present
+        shader.SetInteger("hasTexture", hasTexture);
+        shader.SetInteger("hasSpecMap", hasSpecMap);
+        
         // Set light and material properties via LightManager
         LightManager::SetUniforms();  // Set light uniforms like light position, color, etc.
 
         // Handle textures
         if (hasTexture) {
-            texture.Bind();
-            shader.SetInteger("hasTexture", 1);  // Enable texture
-        } else {
-            shader.SetInteger("hasTexture", 0);  // No texture
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, texture.ID);
+            shader.SetInteger("diffuse_tex", 0);  // Set diffuse texture to texture unit 0
         }
+
+        if (hasSpecMap) {
+            glActiveTexture(GL_TEXTURE1);
+            glBindTexture(GL_TEXTURE_2D, specMap.ID);
+            shader.SetInteger("spec", 1);  // Set specular map to texture unit 1
+        }
+
 
         // Set transformation matrices
         shader.SetMatrix4("model", model);

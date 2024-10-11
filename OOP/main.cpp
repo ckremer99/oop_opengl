@@ -4,7 +4,8 @@
 #include "resource_manager.h"
 #include "cube.h"
 #include <iostream>
-
+#include <cstdlib>
+#include <ctime>
 
 //callback initializations
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -61,15 +62,49 @@ int main()
     ResourceManager::LoadShader("./shaders/lightShader.vs", "./shaders/lightShader.fs", nullptr, "lightShader");
     ResourceManager::LoadShader("./shaders/cubeShader.vs", "./shaders/cubeShader.fs", nullptr, "cubeShader");
     ResourceManager::LoadTexture("./resources/textures/container.png", true, "container");
+    ResourceManager::LoadTexture("./resources/textures/specMap.png", true, "containerSpecMap");
     ResourceManager::AddCamera("camera");
     
     unsigned int VAO;
     Cube::InitCube(VAO);
     
-    Cube cube(glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3(0.0f, 0.5f, 1.0f));
-    Cube lightCube(glm::vec3(1.5f, 2.5f, 2.0f), glm::vec3(1.0f, 1.0f, 1.0f), true);
-    lightCube.SetScale(0.2f);
-    cube.SetScale(0.4f);
+    glm::vec3 cubePositions[] = {
+        glm::vec3( 1.0f,  1.0f,  1.0f),
+        glm::vec3( 2.0f,  5.0f, -15.0f),
+        glm::vec3(-1.5f, -2.2f, -2.5f),
+        glm::vec3(-3.8f, -2.0f, -12.3f),
+        glm::vec3( 2.4f, -0.4f, -3.5f),
+        glm::vec3(-1.7f,  3.0f, -7.5f),
+        glm::vec3( 1.3f, -2.0f, -2.5f),
+        glm::vec3( 1.5f,  2.0f, -2.5f),
+        glm::vec3( 1.5f,  0.2f, -1.5f),
+        glm::vec3(-1.3f,  1.0f, -1.5f)
+    };
+    
+    glm::vec3 pointLightPositions[] = {
+        glm::vec3( 0.7f,  0.2f,  2.0f),
+        glm::vec3( 2.3f, -3.3f, -4.0f),
+        glm::vec3(-4.0f,  2.0f, -12.0f),
+        glm::vec3( 0.0f,  0.0f, -3.0f)
+    };
+    
+    std::srand(static_cast<unsigned int>(std::time(0)));
+    Cube cube[10];
+    for (int i = 0; i < 10; i++) {
+        
+        float r = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
+        float g = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
+        float b = static_cast<float>(std::rand()) / static_cast<float>(RAND_MAX);
+        
+        cube[i] = Cube(cubePositions[i], glm::vec3(r, g, b), false);  // Proper constructor call
+    }
+    
+    Cube lightCube[4];
+    for (int i = 0; i < 4; i++) {
+        lightCube[i] = Cube(pointLightPositions[i], glm::vec3(1.0f), true);
+        lightCube[i].SetScale(0.2f);
+    }
+    
     
     glEnable(GL_DEPTH_TEST);
     
@@ -93,8 +128,14 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glBindVertexArray(VAO); 
-        cube.Draw();
-        lightCube.Draw();
+        
+        for (int i = 0; i < 10; i++) {
+            cube[i].Draw();
+        }
+        
+        for (int i = 0; i < 4; i++) {
+            lightCube[i].Draw(); 
+        }
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
         glfwSwapBuffers(window);

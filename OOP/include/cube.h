@@ -9,7 +9,6 @@
 #include "light_manager.h"
 #include "camera_class.h"
 
-
 struct Material {
     glm::vec3 ambient;
     glm::vec3 diffuse;
@@ -27,8 +26,11 @@ public:
     
     bool isLight;
     bool hasTexture = false;
+    bool hasSpecMap = false;
+    
     Light lightProperties;
     Texture2D texture;
+    Texture2D specMap;
     Shader shader;
     
     Material material; 
@@ -44,6 +46,7 @@ public:
     void Draw();
     void SetScale(float value);
     void SetTexture(std::string name);
+    void SetSpecMap(std::string name); 
     static void InitCube(unsigned int& VAO);
     
     
